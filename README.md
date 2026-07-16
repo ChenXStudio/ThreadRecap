@@ -90,6 +90,3 @@ Transcript bodies are not copied into the SQLite database.
 - There is no settings UI.
 - Triggering a recap creates a visible internal user turn before the generated
   summary because same-task app-server writeback is used.
-
-Implementation details and verification commands are in
-[`plugins/thread-recap/README.md`](plugins/thread-recap/README.md).
