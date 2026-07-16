@@ -13,35 +13,43 @@ from spikes import capture_hook, probe_app_server
 
 
 def test_redact_sensitive_fields_recursively_without_mutating_input() -> None:
+    sensitive_names = (
+        "token",
+        "tokens",
+        "accessToken",
+        "apiKey",
+        "apiKeys",
+        "authorization",
+        "cookie",
+        "cookies",
+        "secret",
+        "secrets",
+        "clientSecret",
+        "clientSecrets",
+        "password",
+        "passwords",
+        "credential",
+        "credentials",
+        "ACCESS-TOKEN",
+        "api_keys",
+        "client-secrets",
+    )
     payload = {
         "session_id": "session-1",
-        "authorization": "Bearer private",
-        "apikey": "private",
         "nested": {
-            "api_key": "private",
-            "items": [
-                {"accessToken": "private", "safe": "visible"},
-                {"cookie_jar": "private", "client_secret": "private"},
-            ],
+            "items": [{name: f"private-{index}"} for index, name in enumerate(sensitive_names)],
+            "safe": {"monkey": "visible"},
         },
     }
 
     redacted = capture_hook.redact_sensitive(payload)
 
-    assert redacted == {
-        "session_id": "session-1",
-        "authorization": "[REDACTED]",
-        "apikey": "[REDACTED]",
-        "nested": {
-            "api_key": "[REDACTED]",
-            "items": [
-                {"accessToken": "[REDACTED]", "safe": "visible"},
-                {"cookie_jar": "[REDACTED]", "client_secret": "[REDACTED]"},
-            ],
-        },
-    }
-    assert payload["authorization"] == "Bearer private"
-    assert payload["nested"]["api_key"] == "private"
+    assert all(
+        item[name] == "[REDACTED]"
+        for item, name in zip(redacted["nested"]["items"], sensitive_names)
+    )
+    assert redacted["nested"]["safe"] == {"monkey": "visible"}
+    assert payload["nested"]["items"][0]["token"] == "private-0"
 
 
 def test_append_jsonl_keeps_concurrent_records_separate(tmp_path: Path) -> None:
@@ -55,27 +63,106 @@ def test_append_jsonl_keeps_concurrent_records_separate(tmp_path: Path) -> None:
     decoded = [json.loads(line) for line in lines]
     assert len(decoded) == len(records)
     assert sorted(record["sequence"] for record in decoded) == list(range(len(records)))
+    assert list(path.parent.iterdir()) == [path]
+
+
+def test_capture_writes_only_to_plugin_data_and_rejects_cli_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plugin_data = tmp_path / "plugin data"
+    override = tmp_path / "override"
+    monkeypatch.setenv("PLUGIN_DATA", str(plugin_data))
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"hook_event_name":"SessionStart"}'))
+
+    assert capture_hook.main([]) == 0
+    assert capture_hook.main(["--plugin-data", str(override)]) == 2
+
+    assert [path.name for path in plugin_data.iterdir()] == ["hook-probe.jsonl"]
+    assert not override.exists()
+
+
+def _write_transcript(path: Path, records: list[dict[str, object]]) -> None:
+    path.write_text(
+        "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+    )
+
+
+def _stop_payload(transcript: Path, turn_id: str = "turn-1") -> dict[str, str]:
+    return {
+        "hook_event_name": "Stop",
+        "session_id": "session-1",
+        "turn_id": turn_id,
+        "transcript_path": str(transcript),
+        "cwd": str(transcript.parent),
+    }
 
 
 def test_stop_record_observes_transcript_already_on_disk(tmp_path: Path) -> None:
     transcript = tmp_path / "session.jsonl"
-    transcript.write_text('{"type":"turn_context"}\n', encoding="utf-8")
-    payload = {
-        "hook_event_name": "Stop",
-        "session_id": "session-1",
-        "turn_id": "turn-1",
-        "transcript_path": str(transcript),
-        "cwd": str(tmp_path),
-    }
+    _write_transcript(
+        transcript,
+        [
+            {"type": "turn_context", "payload": {"turn_id": "turn-1"}},
+            {
+                "type": "event_msg",
+                "payload": {"type": "task_started", "turn_id": "turn-1"},
+            },
+            {
+                "type": "event_msg",
+                "payload": {"type": "task_complete", "turn_id": "turn-1"},
+            },
+        ],
+    )
 
-    record = capture_hook.build_record(payload, captured_at="2026-07-16T00:00:00Z")
+    record = capture_hook.build_record(
+        _stop_payload(transcript), captured_at="2026-07-16T00:00:00Z"
+    )
 
     assert record["captured_at"] == "2026-07-16T00:00:00Z"
     assert record["transcript_snapshot"] == {
         "exists": True,
         "nonempty": True,
         "ends_with_newline": True,
+        "jsonl_valid": True,
+        "current_turn_seen": True,
+        "current_turn_completed": True,
     }
+
+
+@pytest.mark.parametrize("case", ["truncated", "missing_complete", "wrong_turn"])
+def test_stop_record_rejects_incomplete_current_turn(
+    tmp_path: Path, case: str
+) -> None:
+    transcript = tmp_path / "session.jsonl"
+    started = {
+        "type": "event_msg",
+        "payload": {"type": "task_started", "turn_id": "turn-1"},
+    }
+    if case == "truncated":
+        transcript.write_text(json.dumps(started) + '\n{"type":', encoding="utf-8")
+    elif case == "missing_complete":
+        _write_transcript(transcript, [started])
+    else:
+        _write_transcript(
+            transcript,
+            [
+                started,
+                {
+                    "type": "event_msg",
+                    "payload": {"type": "task_complete", "turn_id": "turn-other"},
+                },
+            ],
+        )
+
+    snapshot = capture_hook.build_record(_stop_payload(transcript))[
+        "transcript_snapshot"
+    ]
+
+    assert snapshot["current_turn_completed"] is False
+    if case == "truncated":
+        assert snapshot["jsonl_valid"] is False
+    else:
+        assert snapshot["jsonl_valid"] is True
 
 
 @pytest.mark.parametrize(
