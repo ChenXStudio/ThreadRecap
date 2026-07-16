@@ -34,7 +34,8 @@ def test_hooks_register_supported_synchronous_launchers() -> None:
         assert handler["type"] == "command"
         assert handler["timeout"] == 10
         assert handler["command"] == '"$PLUGIN_ROOT/hooks/run-hook.sh"'
-        assert "$env:PLUGIN_ROOT" in handler["commandWindows"]
+        assert handler["commandWindows"].startswith("powershell.exe -NoProfile -NonInteractive")
+        assert "GetEnvironmentVariable('PLUGIN_ROOT')" in handler["commandWindows"]
         assert "run-hook.ps1" in handler["commandWindows"]
         assert "async" not in handler
 

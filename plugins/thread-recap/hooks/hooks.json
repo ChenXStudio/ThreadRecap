@@ -6,7 +6,7 @@
           {
             "type": "command",
             "command": "\"$PLUGIN_ROOT/hooks/run-hook.sh\"",
-            "commandWindows": "& (Join-Path -Path $env:PLUGIN_ROOT -ChildPath 'hooks/run-hook.ps1')",
+            "commandWindows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"& ([IO.Path]::Combine([Environment]::GetEnvironmentVariable('PLUGIN_ROOT'), 'hooks', 'run-hook.ps1'))\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
           {
             "type": "command",
             "command": "\"$PLUGIN_ROOT/hooks/run-hook.sh\"",
-            "commandWindows": "& (Join-Path -Path $env:PLUGIN_ROOT -ChildPath 'hooks/run-hook.ps1')",
+            "commandWindows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"& ([IO.Path]::Combine([Environment]::GetEnvironmentVariable('PLUGIN_ROOT'), 'hooks', 'run-hook.ps1'))\"",
             "timeout": 10
           }
         ]
@@ -31,7 +31,7 @@
           {
             "type": "command",
             "command": "\"$PLUGIN_ROOT/hooks/run-hook.sh\"",
-            "commandWindows": "& (Join-Path -Path $env:PLUGIN_ROOT -ChildPath 'hooks/run-hook.ps1')",
+            "commandWindows": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"& ([IO.Path]::Combine([Environment]::GetEnvironmentVariable('PLUGIN_ROOT'), 'hooks', 'run-hook.ps1'))\"",
             "timeout": 10
           }
         ]
