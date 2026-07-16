@@ -1,18 +1,31 @@
 {
   "name": "thread-recap",
-  "version": "0.1.0",
-  "description": "ThreadRecap plugin",
+  "version": "0.1.0+codex.20260716095840",
+  "description": "Automatically recap a Codex task after five minutes of completed inactivity.",
   "author": {
-    "name": "Local developer"
+    "name": "ChenXStudio",
+    "url": "https://github.com/ChenXStudio"
   },
+  "homepage": "https://github.com/ChenXStudio/ThreadRecap",
+  "repository": "https://github.com/ChenXStudio/ThreadRecap",
+  "keywords": [
+    "codex",
+    "recap",
+    "productivity",
+    "hooks"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "ThreadRecap",
-    "shortDescription": "Use ThreadRecap in Codex.",
-    "longDescription": "ThreadRecap adds a local Codex plugin scaffold.",
-    "developerName": "Local developer",
+    "shortDescription": "Recap a task after five idle minutes.",
+    "longDescription": "Waits until the current Codex turn is complete, then writes a structured recap to the same task after five minutes without new activity.",
+    "developerName": "ChenXStudio",
     "category": "Productivity",
-    "capabilities": [],
-    "defaultPrompt": "Help me use ThreadRecap."
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Summarize the current task with ThreadRecap."
+    ]
   }
 }

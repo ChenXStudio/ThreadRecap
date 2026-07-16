@@ -71,3 +71,23 @@ def test_launchers_do_not_change_to_an_installation_directory() -> None:
 
     assert not re.search(r"(?m)^\s*cd(?:\s|$)", shell_source)
     assert "Set-Location" not in powershell_source
+
+
+def test_all_distributed_runtime_files_remain_machine_agnostic() -> None:
+    patterns = (
+        re.compile(r"(?im)(?:^|[\"'\s(])[a-z]:[\\/]"),
+        re.compile(r"(?i)/(?:Users|home)/[^/\\\s]+"),
+        re.compile(r"(?i)chenweiyuan"),
+    )
+    suffixes = {".json", ".md", ".ps1", ".py", ".sh", ".toml"}
+
+    for path in PLUGIN_ROOT.rglob("*"):
+        if (
+            not path.is_file()
+            or path.suffix not in suffixes
+            or "__pycache__" in path.parts
+            or "tests" in path.parts
+        ):
+            continue
+        source = path.read_text(encoding="utf-8")
+        assert all(pattern.search(source) is None for pattern in patterns), path

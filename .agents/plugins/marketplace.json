@@ -1,7 +1,7 @@
 {
-  "name": "personal",
+  "name": "thread-recap",
   "interface": {
-    "displayName": "Personal"
+    "displayName": "ThreadRecap"
   },
   "plugins": [
     {
