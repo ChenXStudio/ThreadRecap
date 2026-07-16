@@ -2,7 +2,12 @@
 
 ## Decision
 
-**NO-GO / BLOCKED** under the Stop-time transcript-completeness hard gate.
+**GO for the revised app-server completion design.**
+
+The original Stop-time transcript-completeness design below remains a useful
+historical finding and was correctly classified **NO-GO / BLOCKED**: `Stop`
+fires before the transcript receives its explicit `task_complete` record.
+ThreadRecap no longer uses that record or treats `Stop` as the cooldown start.
 
 The stable app-server writeback gate passed with Codex CLI `0.144.2`: a real
 non-ephemeral CLI session was located from its hook `session_id`, resumed as
@@ -11,8 +16,13 @@ real hook probe showed that the current turn's explicit `task_complete` record
 was not yet in the transcript when `Stop` ran. It appeared only after the CLI
 process finished. Therefore Stop-time current-turn completion is not proven.
 
-The main implementation must not proceed on the prior GO. The later cooldown
-state machine and recursive-trigger guard also remain unimplemented.
+The implemented design lets `Stop` wake a detached worker, then reads the
+stable app-server `Turn.status` and `Turn.completedAt` fields. The cooldown
+starts only after status is `completed`. A 2026-07-16 real installed-plugin
+test with Codex CLI `0.144.5` confirmed an exact 300-second due time, same-thread
+structured recap writeback, a persisted internal client marker, and zero
+retries. The cooldown state machine and recursive-trigger guard are now
+implemented and covered by the repository test suite.
 
 ## Supported surface used
 
@@ -137,10 +147,12 @@ completed turn also contained an agent message. This gives the later state
 machine a stable field for identifying an internally generated turn and a
 stable turn boundary for associating its result.
 
-## Failure modes and remaining work
+## Original failure modes and revised resolution
 
-- **Blocking result:** Stop-time current-turn completion is unproven because
-  the explicit matching completion record is written after Stop returns.
+- **Original blocking result:** Stop-time current-turn completion is unproven
+  because the explicit matching completion record is written after Stop
+  returns. The revised design does not read the transcript and waits for the
+  stable app-server turn status instead.
 - A missing, ambiguous, ephemeral, or differently resumed thread is a NO-GO.
 - A missing matching `turn/completed`, missing persisted client ID, or missing
   result in the marked turn is a NO-GO.
@@ -150,8 +162,10 @@ stable turn boundary for associating its result.
   the target turn completed and the stable protocol checks passed.
 - The app-server mapping and writeback result remains positive, but it does not
   override the Stop evidence failure.
-- Task 8 would still need to verify complete recursive-trigger behavior if a
-  revised design resolves this blocker.
+- Recursive-trigger behavior is now guarded by both the visible internal text
+  marker and persisted `clientUserMessageId`. Recovery recognizes a previously
+  completed recap turn before retrying, preventing duplicate writeback after a
+  worker crash between generation and cursor commit.
 
 ## Cleanup
 
