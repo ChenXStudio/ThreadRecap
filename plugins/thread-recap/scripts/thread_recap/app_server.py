@@ -19,7 +19,14 @@ class AppServerError(RuntimeError):
 
 
 _EOF = object()
-_SOURCE_KINDS = ["cli", "exec", "appServer"]
+THREAD_SOURCE_KINDS = ["cli", "vscode", "exec", "appServer", "unknown"]
+WINDOWS_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
+
+def app_server_process_options(platform_name: str = os.name) -> dict[str, int]:
+    if platform_name == "nt":
+        return {"creationflags": WINDOWS_CREATE_NO_WINDOW}
+    return {}
 
 
 @dataclass(frozen=True)
@@ -205,6 +212,7 @@ class _Connection:
                 text=True,
                 encoding="utf-8",
                 bufsize=1,
+                **app_server_process_options(),
             )
         except OSError as error:
             raise AppServerError("codex_start_failed") from error
@@ -247,7 +255,7 @@ class CodexGateway:
         candidates: set[str] = set()
         for _ in range(100):
             params: dict[str, Any] = {
-                "sourceKinds": _SOURCE_KINDS,
+                "sourceKinds": THREAD_SOURCE_KINDS,
                 "archived": False,
                 "limit": 100,
                 "sortKey": "updated_at",

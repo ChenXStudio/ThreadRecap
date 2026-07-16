@@ -1,7 +1,26 @@
 import io
 import json
 
+from thread_recap import app_server
 from thread_recap.app_server import AppServerClient, ThreadSnapshot
+
+
+def test_thread_lookup_includes_codex_desktop_source() -> None:
+    assert "vscode" in app_server.THREAD_SOURCE_KINDS
+    assert set(app_server.THREAD_SOURCE_KINDS) == {
+        "cli",
+        "vscode",
+        "exec",
+        "appServer",
+        "unknown",
+    }
+
+
+def test_windows_app_server_process_is_hidden() -> None:
+    options = app_server.app_server_process_options("nt")
+
+    assert options["creationflags"] & app_server.WINDOWS_CREATE_NO_WINDOW
+    assert app_server.app_server_process_options("posix") == {}
 
 
 def test_thread_snapshot_uses_explicit_turn_status_and_completion_timestamp() -> None:
