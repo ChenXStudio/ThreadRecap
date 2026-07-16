@@ -210,7 +210,7 @@ def test_launcher_requires_plugin_environment_without_home_fallback(
     old_home = os.environ.get("HOME")
     os.environ["HOME"] = str(fake_home)
     try:
-        completed, _, _ = _run_launcher(tmp_path, valid={"py": True}, omit=missing)
+        completed, data, _ = _run_launcher(tmp_path, valid={"py": True}, omit=missing)
     finally:
         if old_home is None:
             os.environ.pop("HOME", None)
@@ -220,6 +220,8 @@ def test_launcher_requires_plugin_environment_without_home_fallback(
     assert completed.returncode != 0
     assert missing in completed.stderr
     assert list(fake_home.iterdir()) == []
+    if missing == "PLUGIN_ROOT":
+        assert missing in (data / "worker.log").read_text(encoding="utf-8")
 
 
 def test_launcher_forwards_hook_failure_and_logs_it(tmp_path: Path) -> None:

@@ -5,6 +5,13 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = PLUGIN_ROOT / "hooks"
+TASK_2_FILES = (
+    HOOKS_DIR / "hooks.json",
+    HOOKS_DIR / "run-hook.ps1",
+    HOOKS_DIR / "run-hook.sh",
+    Path(__file__),
+    Path(__file__).with_name("test_launchers.py"),
+)
 
 
 def test_hooks_register_supported_synchronous_launchers() -> None:
@@ -32,18 +39,25 @@ def test_hooks_register_supported_synchronous_launchers() -> None:
         assert "async" not in handler
 
 
-def test_launchers_are_environment_relative_and_machine_agnostic() -> None:
+def test_task_2_files_are_environment_relative_and_machine_agnostic() -> None:
+    developer_identifier = "".join(("chen", "wei", "yuan"))
+    personal_home_markers = tuple(
+        "/".join(("", directory, "")) for directory in ("Users", "home")
+    )
+
+    for path in TASK_2_FILES:
+        source = path.read_text(encoding="utf-8")
+
+        assert not re.search(r"(?i)[a-z]:[\\/]", source)
+        assert all(marker not in source for marker in personal_home_markers)
+        assert developer_identifier not in source.casefold()
+
     for name in ("run-hook.sh", "run-hook.ps1"):
         source = (HOOKS_DIR / name).read_text(encoding="utf-8")
-
         assert "PLUGIN_ROOT" in source
         assert "PLUGIN_DATA" in source
         assert "worker.log" in source
         assert "hook_entry.py" in source
-        assert not re.search(r"(?i)[a-z]:[\\/]", source)
-        assert "/Users/" not in source
-        assert "/home/" not in source
-        assert "chenweiyuan" not in source.casefold()
 
 
 def test_launchers_do_not_change_to_an_installation_directory() -> None:

@@ -15,11 +15,6 @@ function Write-LauncherError {
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($env:PLUGIN_ROOT)) {
-    Write-LauncherError "ThreadRecap cannot start: PLUGIN_ROOT is missing or empty. Run this hook through Codex plugin loading."
-    exit 2
-}
-
 if ([string]::IsNullOrWhiteSpace($env:PLUGIN_DATA)) {
     Write-LauncherError "ThreadRecap cannot start: PLUGIN_DATA is missing or empty. Run this hook through Codex plugin loading."
     exit 2
@@ -34,6 +29,11 @@ catch {
     $logPath = $null
     Write-LauncherError "ThreadRecap cannot start: PLUGIN_DATA cannot be created or is not writable: $env:PLUGIN_DATA"
     exit 3
+}
+
+if ([string]::IsNullOrWhiteSpace($env:PLUGIN_ROOT)) {
+    Write-LauncherError "ThreadRecap cannot start: PLUGIN_ROOT is missing or empty. Run this hook through Codex plugin loading."
+    exit 2
 }
 
 if (-not (Test-Path -LiteralPath $env:PLUGIN_ROOT -PathType Container)) {

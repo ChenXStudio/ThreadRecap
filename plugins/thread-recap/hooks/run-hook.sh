@@ -10,11 +10,6 @@ report_error() {
     fi
 }
 
-if [ -z "${PLUGIN_ROOT:-}" ]; then
-    report_error "ThreadRecap cannot start: PLUGIN_ROOT is missing or empty. Run this hook through Codex plugin loading."
-    exit 2
-fi
-
 if [ -z "${PLUGIN_DATA:-}" ]; then
     report_error "ThreadRecap cannot start: PLUGIN_DATA is missing or empty. Run this hook through Codex plugin loading."
     exit 2
@@ -30,6 +25,11 @@ if ! (umask 077; : >>"$log_file") 2>/dev/null; then
     log_file=
     report_error "ThreadRecap cannot start: PLUGIN_DATA cannot be created or is not writable: $PLUGIN_DATA"
     exit 3
+fi
+
+if [ -z "${PLUGIN_ROOT:-}" ]; then
+    report_error "ThreadRecap cannot start: PLUGIN_ROOT is missing or empty. Run this hook through Codex plugin loading."
+    exit 2
 fi
 
 if [ ! -d "$PLUGIN_ROOT" ]; then
