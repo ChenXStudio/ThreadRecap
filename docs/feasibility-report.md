@@ -157,5 +157,6 @@ stable turn boundary for associating its result.
 
 Both temporary probe installations, marketplace registrations, marketplace
 copies, plugin-data directories, and real hook captures were removed after
-their runs. Generated schemas and other ignored feasibility inputs remain
-outside the committed deliverables. The repository hooks file was unchanged.
+their runs. Generated schemas and other ignored feasibility inputs were also
+removed; only the SDD progress and task reports remain in ignored scratch.
+The repository hooks file was unchanged.
