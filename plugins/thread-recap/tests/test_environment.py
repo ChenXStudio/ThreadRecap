@@ -40,17 +40,14 @@ def test_hooks_register_supported_synchronous_launchers() -> None:
 
 
 def test_task_2_files_are_environment_relative_and_machine_agnostic() -> None:
-    developer_identifier = "".join(("chen", "wei", "yuan"))
-    personal_home_markers = tuple(
-        "/".join(("", directory, "")) for directory in ("Users", "home")
+    machine_path_patterns = (
+        re.compile(r"(?i)[a-z]:[\\/]"),
+        re.compile(r"(?i)/(?:Users|home)/[^/\\\s]+"),
     )
 
     for path in TASK_2_FILES:
         source = path.read_text(encoding="utf-8")
-
-        assert not re.search(r"(?i)[a-z]:[\\/]", source)
-        assert all(marker not in source for marker in personal_home_markers)
-        assert developer_identifier not in source.casefold()
+        assert all(pattern.search(source) is None for pattern in machine_path_patterns)
 
     for name in ("run-hook.sh", "run-hook.ps1"):
         source = (HOOKS_DIR / name).read_text(encoding="utf-8")
@@ -58,6 +55,14 @@ def test_task_2_files_are_environment_relative_and_machine_agnostic() -> None:
         assert "PLUGIN_DATA" in source
         assert "worker.log" in source
         assert "hook_entry.py" in source
+        fallback_patterns = (
+            re.compile(r"Path[.]home\("),
+            re.compile(r"expanduser\("),
+            re.compile(r"\$HOME\b"),
+            re.compile(r"\$env:USERPROFILE\b", re.IGNORECASE),
+            re.compile(r"GetFolderPath\(", re.IGNORECASE),
+        )
+        assert all(pattern.search(source) is None for pattern in fallback_patterns)
 
 
 def test_launchers_do_not_change_to_an_installation_directory() -> None:
