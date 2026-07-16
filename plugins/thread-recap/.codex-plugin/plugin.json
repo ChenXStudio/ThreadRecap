@@ -1,6 +1,6 @@
 {
   "name": "thread-recap",
-  "version": "0.1.0+codex.20260716131907",
+  "version": "0.1.0+codex.20260716132941",
   "description": "Automatically recap a Codex task after five minutes of completed inactivity.",
   "author": {
     "name": "ChenXStudio",

@@ -22,8 +22,10 @@ if ([string]::IsNullOrWhiteSpace($env:PLUGIN_DATA)) {
 
 try {
     New-Item -ItemType Directory -Path $env:PLUGIN_DATA -Force -ErrorAction Stop | Out-Null
-    $logPath = Join-Path -Path $env:PLUGIN_DATA -ChildPath "worker.log"
-    [System.IO.File]::AppendAllText($logPath, "")
+    if (-not (Test-Path -LiteralPath $env:PLUGIN_DATA -PathType Container)) {
+        throw "PLUGIN_DATA is not a directory"
+    }
+    $logPath = Join-Path -Path $env:PLUGIN_DATA -ChildPath "hook.log"
 }
 catch {
     $logPath = $null

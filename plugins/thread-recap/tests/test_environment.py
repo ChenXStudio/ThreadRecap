@@ -54,7 +54,7 @@ def test_task_2_files_are_environment_relative_and_machine_agnostic() -> None:
         source = (HOOKS_DIR / name).read_text(encoding="utf-8")
         assert "PLUGIN_ROOT" in source
         assert "PLUGIN_DATA" in source
-        assert "worker.log" in source
+        assert "hook.log" in source
         assert "hook_entry.py" in source
         fallback_patterns = (
             re.compile(r"Path[.]home\("),

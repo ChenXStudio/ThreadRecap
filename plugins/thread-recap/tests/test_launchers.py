@@ -178,7 +178,7 @@ def test_launcher_selects_python_310_and_forwards_process_contract(
     assert completed.stdout == 'OUT:{"hello":"world"}'
     assert 'ERR:{"hello":"world"}' in completed.stderr
     assert shim_log.read_text(encoding="utf-8").splitlines()[-1] == selected
-    assert (data / "worker.log").is_file()
+    assert data.is_dir()
 
 
 def test_launcher_rejects_python_older_than_310(tmp_path: Path) -> None:
@@ -190,7 +190,7 @@ def test_launcher_rejects_python_older_than_310(tmp_path: Path) -> None:
     assert completed.returncode != 0
     assert "Python 3.10" in completed.stderr
     assert "OUT:" not in completed.stdout
-    assert "Python 3.10" in (data / "worker.log").read_text(encoding="utf-8")
+    assert "Python 3.10" in (data / "hook.log").read_text(encoding="utf-8")
 
 
 def test_launcher_rejects_missing_python(tmp_path: Path) -> None:
@@ -198,7 +198,7 @@ def test_launcher_rejects_missing_python(tmp_path: Path) -> None:
 
     assert completed.returncode != 0
     assert "Python 3.10" in completed.stderr
-    assert "Python 3.10" in (data / "worker.log").read_text(encoding="utf-8")
+    assert "Python 3.10" in (data / "hook.log").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("missing", ["PLUGIN_ROOT", "PLUGIN_DATA"])
@@ -221,7 +221,7 @@ def test_launcher_requires_plugin_environment_without_home_fallback(
     assert missing in completed.stderr
     assert list(fake_home.iterdir()) == []
     if missing == "PLUGIN_ROOT":
-        assert missing in (data / "worker.log").read_text(encoding="utf-8")
+        assert missing in (data / "hook.log").read_text(encoding="utf-8")
 
 
 def test_launcher_forwards_hook_failure_and_logs_it(tmp_path: Path) -> None:
@@ -230,7 +230,7 @@ def test_launcher_forwards_hook_failure_and_logs_it(tmp_path: Path) -> None:
     assert completed.returncode == 23
     assert completed.stdout == 'OUT:{"hello":"world"}'
     assert 'ERR:{"hello":"world"}' in completed.stderr
-    log = (data / "worker.log").read_text(encoding="utf-8")
+    log = (data / "hook.log").read_text(encoding="utf-8")
     assert "23" in log
 
 

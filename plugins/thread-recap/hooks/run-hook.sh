@@ -20,7 +20,7 @@ if ! mkdir -p "$PLUGIN_DATA" 2>/dev/null; then
     exit 3
 fi
 
-log_file="$PLUGIN_DATA/worker.log"
+log_file="$PLUGIN_DATA/hook.log"
 if ! (umask 077; : >>"$log_file") 2>/dev/null; then
     log_file=
     report_error "ThreadRecap cannot start: PLUGIN_DATA cannot be created or is not writable: $PLUGIN_DATA"

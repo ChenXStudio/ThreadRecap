@@ -12,9 +12,12 @@ from thread_recap.store import Store
 
 
 def _log(plugin_data: Path, message: str) -> None:
-    plugin_data.mkdir(parents=True, exist_ok=True)
-    with (plugin_data / "worker.log").open("a", encoding="utf-8") as handle:
-        handle.write(message + "\n")
+    try:
+        plugin_data.mkdir(parents=True, exist_ok=True)
+        with (plugin_data / "hook.log").open("a", encoding="utf-8") as handle:
+            handle.write(message + "\n")
+    except OSError:
+        pass
 
 
 def main() -> int:

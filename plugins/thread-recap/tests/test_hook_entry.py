@@ -51,4 +51,4 @@ def test_hook_entry_rejects_invalid_json_without_spawning(tmp_path: Path, monkey
     )
 
     assert hook_entry.main() == 2
-    assert "hook_error" in (data / "worker.log").read_text(encoding="utf-8")
+    assert "hook_error" in (data / "hook.log").read_text(encoding="utf-8")
