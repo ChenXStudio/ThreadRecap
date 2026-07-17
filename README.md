@@ -63,6 +63,39 @@ additional time.
 
 You can also request a recap manually with `$thread-recap`.
 
+## Companion dashboard
+
+The repository also includes an optional Tauri companion app in
+`apps/dashboard`. It provides a live view of tracked Codex sessions without
+requiring the active Codex page to refresh:
+
+- Working, cooling, generating, and recap-ready states
+- A live five-minute cooldown countdown
+- Rendered recap details
+- Native desktop notifications for newly completed recaps
+- A system tray launcher
+- One-click resume in Codex
+
+The dashboard discovers `CODEX_HOME` at runtime and falls back to the standard
+`~/.codex` location. It does not contain a machine-specific path.
+
+To run it from source:
+
+```console
+cd apps/dashboard
+npm install
+npm run tauri dev
+```
+
+To create a native installer:
+
+```console
+npm run tauri build
+```
+
+Dashboard development requires Node.js, Rust, and the platform prerequisites
+listed by Tauri. The Codex plugin itself still requires only Python and Codex.
+
 ## Recap structure
 
 Each recap contains six sections:
@@ -84,10 +117,11 @@ ThreadRecap uses the existing Codex login and the local Codex app-server. It
 does not require a separate API key or send transcripts to a third-party
 summarization service.
 
-Coordination state is stored in `PLUGIN_DATA/state.db`, and diagnostic messages
-are written to `PLUGIN_DATA/worker.log`. Transcript bodies are not copied into
-the SQLite database. Plugin files are resolved through `PLUGIN_ROOT`, so no
-machine-specific installation path is required.
+Coordination state is stored in `PLUGIN_DATA/state.db`. Worker output is written
+to `PLUGIN_DATA/worker.log`, while hook diagnostics use `PLUGIN_DATA/hook.log`.
+Transcript bodies are not copied into the SQLite database. Plugin files are
+resolved through `PLUGIN_ROOT`, so no machine-specific installation path is
+required.
 
 ## Troubleshooting
 
@@ -113,6 +147,8 @@ codex plugin marketplace remove thread-recap
 ## Current limitations
 
 - The idle timeout is fixed at 300 seconds.
-- There is no settings interface.
+- Dashboard settings are not configurable in the first preview.
 - Same-task writeback creates a visible internal user turn before the generated
   recap.
+- Codex does not live-refresh a turn written by a separate app-server process;
+  use the companion dashboard for immediate visibility and notifications.

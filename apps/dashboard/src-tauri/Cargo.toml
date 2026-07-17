@@ -1,0 +1,22 @@
+[package]
+name = "thread-recap-dashboard"
+version = "0.1.0"
+description = "A live companion dashboard for ThreadRecap"
+authors = ["ChenXStudio"]
+edition = "2021"
+
+[lib]
+name = "thread_recap_dashboard_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dirs = "6"
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+walkdir = "2"

@@ -2,3 +2,10 @@
 .superpowers/
 docs/
 plugins/thread-recap/README.md
+
+# ThreadRecap Dashboard build output
+apps/dashboard/node_modules/
+apps/dashboard/dist/
+apps/dashboard/src-tauri/target/
+apps/dashboard/.artifacts/
+apps/dashboard/src-tauri/gen/schemas/
