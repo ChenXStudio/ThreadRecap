@@ -32,33 +32,138 @@ const countdown = (seconds: number | null) => {
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
 };
 
+const remainingFor = (session: SessionView) => {
+  if (!session.dueAt) return session.remainingSeconds;
+  return Math.max(0, Math.ceil(session.dueAt - Date.now() / 1000));
+};
+
 const summaryKey = (session: SessionView) =>
   `${session.sessionId}:${session.summarizedTurnId ?? "none"}`;
 
+const summaryPreview = (summary: string) =>
+  summary
+    .replace(/\[thread-recap:summary:[^\]]+\]/g, "")
+    .replace(/[#>*_`~-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 function StatusPill({ session }: { session: SessionView }) {
+  const remaining = remainingFor(session);
   return (
     <span className={`status status--${session.phase}`}>
       <span className="status__dot" />
       {PHASE_LABELS[session.phase] ?? session.phase}
-      {session.phase === "cooling" && session.remainingSeconds !== null
-        ? ` · ${countdown(session.remainingSeconds)}`
+      {session.phase === "cooling" && remaining !== null
+        ? ` · ${countdown(remaining)}`
         : ""}
     </span>
   );
 }
 
+function SessionCard({
+  session,
+  expanded,
+  onToggle,
+}: {
+  session: SessionView;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const remaining = remainingFor(session);
+  const openInCodex = async () => {
+    await invoke("open_in_codex", {
+      sessionId: session.sessionId,
+      cwd: session.cwd,
+    });
+  };
+  const copySummary = async () => {
+    if (session.summary) await navigator.clipboard.writeText(session.summary);
+  };
+
+  return (
+    <article className={`session-tile ${expanded ? "session-tile--expanded" : ""}`}>
+      <div className="session-tile__topline">
+        <StatusPill session={session} />
+        <span className="session-tile__time">{relativeTime(session.lastActivityAt)}</span>
+      </div>
+
+      <h2 title={session.title}>{session.title}</h2>
+      <p className="session-tile__message">
+        {session.lastUserMessage ?? "Waiting for the first prompt"}
+      </p>
+
+      {session.phase === "cooling" && remaining !== null && (
+        <div className="cooldown-inline">
+          <div className="cooldown-inline__label">
+            <span>Recap in</span>
+            <strong>{countdown(remaining)}</strong>
+          </div>
+          <div className="progress-track">
+            <div
+              style={{
+                width: `${100 - Math.min(100, (remaining / 300) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className={`tile-recap ${session.summary ? "tile-recap--ready" : ""}`}>
+        <div className="tile-recap__label">
+          <span>{session.summary ? "Latest recap" : "Recap"}</span>
+          {session.summarizedTurnId && (
+            <code>{session.summarizedTurnId.slice(0, 8)}</code>
+          )}
+        </div>
+        {session.summary ? (
+          expanded ? (
+            <div className="recap-content">
+              <ReactMarkdown>{session.summary}</ReactMarkdown>
+            </div>
+          ) : (
+            <p className="tile-recap__preview">{summaryPreview(session.summary)}</p>
+          )
+        ) : (
+          <p className="tile-recap__empty">
+            A recap will appear after five minutes of inactivity.
+          </p>
+        )}
+      </div>
+
+      {session.lastError && (
+        <div className="error-card"><strong>Last error</strong>{session.lastError}</div>
+      )}
+
+      <div className="session-tile__footer">
+        <div className="session-tile__identity">
+          <span title={session.cwd ?? undefined}>{session.cwd ?? "No workspace"}</span>
+          <code>{session.sessionId.slice(0, 8)}</code>
+        </div>
+        <div className="card-actions">
+          {session.summary && (
+            <>
+              <button onClick={() => void copySummary()} aria-label="Copy recap">Copy</button>
+              <button onClick={onToggle}>{expanded ? "Collapse" : "Read recap"}</button>
+            </>
+          )}
+          <button className="primary" onClick={() => void openInCodex()}>Open</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function App() {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
       const next = await invoke<DashboardSnapshot>("dashboard_snapshot");
       setSnapshot(next);
       setError(null);
-      setSelectedId((current) => current ?? next.sessions[0]?.sessionId ?? null);
 
       const seen = new Set<string>(JSON.parse(localStorage.getItem("recaps-seen") ?? "[]"));
       let changed = false;
@@ -74,7 +179,7 @@ export default function App() {
           if (granted) {
             sendNotification({
               title: `ThreadRecap · ${session.title}`,
-              body: session.summary.replace(/[#*`]/g, "").slice(0, 180),
+              body: summaryPreview(session.summary).slice(0, 180),
             });
           }
         }
@@ -96,24 +201,25 @@ export default function App() {
   }, [refresh]);
 
   const sessions = snapshot?.sessions ?? [];
-  const selected = sessions.find((session) => session.sessionId === selectedId) ?? sessions[0] ?? null;
   const metrics = useMemo(
     () => ({
       total: sessions.length,
-      active: sessions.filter((session) => ["working", "waiting_completion", "generating"].includes(session.phase)).length,
+      active: sessions.filter((session) =>
+        ["working", "waiting_completion", "generating"].includes(session.phase),
+      ).length,
       cooling: sessions.filter((session) => session.phase === "cooling").length,
       ready: sessions.filter((session) => Boolean(session.summary)).length,
     }),
-    [sessions, tick],
+    [sessions],
   );
 
-  const copySummary = async () => {
-    if (selected?.summary) await navigator.clipboard.writeText(selected.summary);
-  };
-
-  const openInCodex = async () => {
-    if (!selected) return;
-    await invoke("open_in_codex", { sessionId: selected.sessionId, cwd: selected.cwd });
+  const toggleExpanded = (sessionId: string) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
   };
 
   return (
@@ -138,81 +244,30 @@ export default function App() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <section className="workspace">
-        <aside className="session-panel">
-          <div className="panel-heading">
-            <span>Sessions</span>
-            <small>{sessions.length}</small>
-          </div>
-          <div className="session-list">
+      <section className="sessions-area">
+        <div className="section-heading">
+          <div><span>Sessions</span><small>Each session is shown as an independent card</small></div>
+          <strong>{sessions.length}</strong>
+        </div>
+
+        {sessions.length ? (
+          <div className="session-grid">
             {sessions.map((session) => (
-              <button
+              <SessionCard
                 key={session.sessionId}
-                className={`session-card ${selected?.sessionId === session.sessionId ? "session-card--selected" : ""}`}
-                onClick={() => setSelectedId(session.sessionId)}
-              >
-                <div className="session-card__title">{session.title}</div>
-                <StatusPill session={session} />
-                <p>{session.lastUserMessage ?? "Waiting for the first prompt"}</p>
-                <div className="session-card__meta">
-                  <span>{relativeTime(session.lastActivityAt)}</span>
-                  <code>{session.sessionId.slice(0, 8)}</code>
-                </div>
-              </button>
+                session={session}
+                expanded={expandedIds.has(session.sessionId)}
+                onToggle={() => toggleExpanded(session.sessionId)}
+              />
             ))}
-            {!sessions.length && (
-              <div className="empty-state">No ThreadRecap sessions yet.<br />Start a Codex task to begin tracking.</div>
-            )}
           </div>
-        </aside>
-
-        <section className="detail-panel">
-          {selected ? (
-            <>
-              <div className="detail-header">
-                <div>
-                  <StatusPill session={selected} />
-                  <h2>{selected.title}</h2>
-                  <p>{selected.cwd ?? "Workspace unavailable"}</p>
-                </div>
-                <div className="actions">
-                  <button onClick={() => void copySummary()} disabled={!selected.summary}>Copy recap</button>
-                  <button className="primary" onClick={() => void openInCodex()}>Open in Codex</button>
-                </div>
-              </div>
-
-              {selected.phase === "cooling" && (
-                <div className="cooldown-card">
-                  <div>
-                    <span>Recap scheduled</span>
-                    <strong>{countdown(selected.remainingSeconds)}</strong>
-                  </div>
-                  <div className="progress-track"><div style={{ width: `${100 - Math.min(100, ((selected.remainingSeconds ?? 0) / 300) * 100)}%` }} /></div>
-                </div>
-              )}
-
-              <article className="recap-card">
-                <div className="recap-card__heading">
-                  <span>Latest recap</span>
-                  {selected.summarizedTurnId && <code>{selected.summarizedTurnId.slice(0, 12)}</code>}
-                </div>
-                {selected.summary ? (
-                  <div className="recap-content"><ReactMarkdown>{selected.summary}</ReactMarkdown></div>
-                ) : (
-                  <div className="recap-placeholder">
-                    <div className="orb" />
-                    <h3>No recap yet</h3>
-                    <p>The recap appears here automatically after the task stays idle for five minutes.</p>
-                  </div>
-                )}
-              </article>
-
-              {selected.lastError && <div className="error-card"><strong>Last error</strong>{selected.lastError}</div>}
-            </>
-          ) : (
-            <div className="recap-placeholder full"><div className="orb" /><h3>Select a session</h3></div>
-          )}
-        </section>
+        ) : (
+          <div className="empty-state">
+            <div className="orb" />
+            <h3>No ThreadRecap sessions yet</h3>
+            <p>Start a Codex task to begin tracking.</p>
+          </div>
+        )}
       </section>
 
       <footer>
