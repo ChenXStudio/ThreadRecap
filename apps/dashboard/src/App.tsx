@@ -92,21 +92,23 @@ function SessionCard({
         {session.lastUserMessage ?? "Waiting for the first prompt"}
       </p>
 
-      {session.phase === "cooling" && remaining !== null && (
-        <div className="cooldown-inline">
-          <div className="cooldown-inline__label">
-            <span>Recap in</span>
-            <strong>{countdown(remaining)}</strong>
+      <div className="session-tile__cooldown-slot">
+        {session.phase === "cooling" && remaining !== null && (
+          <div className="cooldown-inline">
+            <div className="cooldown-inline__label">
+              <span>Recap in</span>
+              <strong>{countdown(remaining)}</strong>
+            </div>
+            <div className="progress-track">
+              <div
+                style={{
+                  width: `${100 - Math.min(100, (remaining / 300) * 100)}%`,
+                }}
+              />
+            </div>
           </div>
-          <div className="progress-track">
-            <div
-              style={{
-                width: `${100 - Math.min(100, (remaining / 300) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className={`tile-recap ${session.summary ? "tile-recap--ready" : ""}`}>
         <div className="tile-recap__label">

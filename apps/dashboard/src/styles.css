@@ -62,6 +62,10 @@ button { font: inherit; }
 
 .session-tile {
   min-width: 0;
+  height: 352px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid #1a3047;
   border-radius: 16px;
@@ -84,27 +88,28 @@ button { font: inherit; }
 .status--idle { color: #4bd7a1; background: rgba(49, 190, 137, .12); }
 .status--superseded { color: #8193a7; }
 
-.cooldown-inline { margin-bottom: 13px; padding: 10px 11px; border: 1px solid #4c391f; border-radius: 10px; background: rgba(91, 60, 18, .18); }
+.session-tile__cooldown-slot { height: 53px; flex: 0 0 53px; margin-bottom: 13px; }
+.cooldown-inline { height: 53px; padding: 10px 11px; border: 1px solid #4c391f; border-radius: 10px; background: rgba(91, 60, 18, .18); }
 .cooldown-inline__label { color: #cba66d; font-size: 10px; }
 .cooldown-inline strong { color: #ffd38c; font: 14px "Cascadia Code", monospace; }
 .progress-track { height: 3px; margin-top: 8px; background: #241d14; border-radius: 10px; overflow: hidden; }
 .progress-track div { height: 100%; background: linear-gradient(90deg, #e69b38, #ffd278); transition: width .4s ease; }
 
-.tile-recap { min-height: 104px; padding: 12px; border: 1px solid #172a40; border-radius: 11px; background: rgba(5, 14, 25, .66); }
+.tile-recap { height: 108px; min-height: 108px; overflow: hidden; padding: 12px; border: 1px solid #172a40; border-radius: 11px; background: rgba(5, 14, 25, .66); }
 .tile-recap--ready { border-color: #1b3c47; background: linear-gradient(145deg, rgba(10, 34, 40, .48), rgba(5, 15, 27, .72)); }
 .tile-recap__label { color: #7890a8; font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .07em; }
 .tile-recap__preview, .tile-recap__empty { margin: 10px 0 0; color: #9eb1c5; font-size: 11px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tile-recap__empty { color: #60758c; }
 code { color: #7189a5; font: 10px "Cascadia Code", Consolas, monospace; }
 
-.recap-content { max-height: 430px; overflow: auto; padding: 4px 3px 2px; color: #c6d6e7; font-size: 12px; line-height: 1.68; }
+.recap-content { height: 76px; overflow: auto; padding: 4px 3px 2px; color: #c6d6e7; font-size: 12px; line-height: 1.68; }
 .recap-content h1, .recap-content h2, .recap-content h3 { margin: 16px 0 6px; color: #e4eef9; letter-spacing: -.02em; }
 .recap-content h1 { font-size: 17px; }.recap-content h2 { font-size: 15px; }.recap-content h3 { font-size: 13px; }
 .recap-content h1:first-child, .recap-content h2:first-child, .recap-content h3:first-child { margin-top: 10px; }
 .recap-content p { margin: 6px 0; }.recap-content ul, .recap-content ol { margin: 6px 0; padding-left: 19px; }
 .recap-content code { padding: 2px 5px; border-radius: 5px; background: #10233a; color: #9ecaff; }
 
-.session-tile__footer { margin-top: 13px; gap: 10px; align-items: flex-end; }
+.session-tile__footer { margin-top: auto; padding-top: 13px; gap: 10px; align-items: flex-end; }
 .session-tile__identity { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .session-tile__identity span { max-width: 140px; color: #566d84; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
